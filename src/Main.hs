@@ -12,6 +12,7 @@ import Reportes
 import Data.List (intercalate)
 import Data.Time (Day, fromGregorian)
 import Data.IORef
+import System.IO (hFlush, stdout)
 
 -- ─── Entry point ──────────────────────────────────────────────────────────────
 
@@ -41,8 +42,7 @@ menuPrincipal refReg refPres refRegl = do
   putStrLn "  5. Simulación"
   putStrLn "  6. Reportes"
   putStrLn "  0. Guardar y salir"
-  putStr "Opción: "
-  op <- getLine
+  op <- promptLine "Opción: "
   case op of
     "0" -> guardarTodo refReg refPres refRegl
     "1" -> menuRegistros refReg         >> menuPrincipal refReg refPres refRegl
@@ -71,8 +71,7 @@ menuRegistros refReg = do
   putStrLn "  3. Filtrar registros"
   putStrLn "  4. Eliminar registro"
   putStrLn "  0. Volver"
-  putStr "Opción: "
-  op <- getLine
+  op <- promptLine "Opción: "
   case op of
     "1" -> agregarRegistroMenu refReg >> menuRegistros refReg
     "2" -> mostrarTodosRegistros refReg >> menuRegistros refReg
@@ -84,20 +83,24 @@ menuRegistros refReg = do
 agregarRegistroMenu :: IORef [Registro] -> IO ()
 agregarRegistroMenu refReg = do
   rs   <- readIORef refReg
-  tipo <- pedirTipo
-  putStr "Monto: "
-  mont <- fmap read getLine :: IO Double
-  cat  <- pedirCategoria
-  putStr "Fecha (YYYY-MM-DD): "
-  dia  <- pedirFecha
-  putStr "Descripción: "
-  desc <- getLine
-  putStr "Etiquetas (separadas por coma, o Enter para ninguna): "
-  etStr <- getLine
-  let ets = if null etStr then [] else splitOn ',' etStr
-  let nuevo = Registro (siguienteId rs) tipo mont cat dia desc ets
-  writeIORef refReg (agregarRegistro nuevo rs)
-  putStrLn (" Registro #" ++ show (registroId nuevo) ++ " agregado.")
+  mTipo <- pedirTipo
+  case mTipo of
+    Nothing -> putStrLn "Operación cancelada."
+    Just tipo -> do
+      mont <- fmap read (promptLine "Monto: ") :: IO Double
+      mCat <- pedirCategoria
+      case mCat of
+        Nothing -> putStrLn "Operación cancelada."
+        Just cat -> do
+          putStr "Fecha (YYYY-MM-DD): "
+          hFlush stdout
+          dia  <- pedirFecha
+          desc <- promptLine "Descripción: "
+          etStr <- promptLine "Etiquetas (separadas por coma, o Enter para ninguna): "
+          let ets = if null etStr then [] else splitOn ',' etStr
+          let nuevo = Registro (siguienteId rs) tipo mont cat dia desc ets
+          writeIORef refReg (agregarRegistro nuevo rs)
+          putStrLn (" Registro #" ++ show (registroId nuevo) ++ " agregado.")
 
 mostrarTodosRegistros :: IORef [Registro] -> IO ()
 mostrarTodosRegistros refReg = do
@@ -109,24 +112,33 @@ mostrarTodosRegistros refReg = do
 filtrarMenu :: IORef [Registro] -> IO ()
 filtrarMenu refReg = do
   putStrLn "  Filtrar por:  1. Tipo  2. Categoría  3. Fecha"
-  putStr "Opción: "
-  op <- getLine
+  putStrLn "  0. Volver"
+  op <- promptLine "Opción: "
   rs <- readIORef refReg
   case op of
+    "0" -> return ()
     "1" -> do
-      tipo <- pedirTipo
-      let filtrados = filtrarPorTipo tipo rs
-      if null filtrados then putStrLn "Sin resultados."
-      else mapM_ (putStrLn . mostrarRegistro) filtrados
+      mTipo <- pedirTipo
+      case mTipo of
+        Nothing -> return ()
+        Just tipo -> do
+          let filtrados = filtrarPorTipo tipo rs
+          if null filtrados then putStrLn "Sin resultados."
+          else mapM_ (putStrLn . mostrarRegistro) filtrados
     "2" -> do
-      cat <- pedirCategoria
-      let filtrados = filtrarPorCategoria cat rs
-      if null filtrados then putStrLn "Sin resultados."
-      else mapM_ (putStrLn . mostrarRegistro) filtrados
+      mCat <- pedirCategoria
+      case mCat of
+        Nothing -> return ()
+        Just cat -> do
+          let filtrados = filtrarPorCategoria cat rs
+          if null filtrados then putStrLn "Sin resultados."
+          else mapM_ (putStrLn . mostrarRegistro) filtrados
     "3" -> do
       putStr "Fecha inicio (YYYY-MM-DD): "
+      hFlush stdout
       desde <- pedirFecha
       putStr "Fecha fin    (YYYY-MM-DD): "
+      hFlush stdout
       hasta <- pedirFecha
       let filtrados = filtrarPorFecha desde hasta rs
       if null filtrados then putStrLn "Sin resultados."
@@ -143,8 +155,7 @@ eliminarRegistroMenu refReg = do
                              show (tipoRegistro r) ++ " | " ++
                              show (monto r) ++ " | " ++
                              descripcion r)) rs
-      putStr "ID a eliminar: "
-      rid <- fmap read getLine :: IO Int
+      rid <- fmap read (promptLine "ID a eliminar: ") :: IO Int
       writeIORef refReg (eliminarRegistro rid rs)
       putStrLn " Registro eliminado."
 
@@ -159,8 +170,7 @@ menuPresupuestos refPres refReg = do
   putStrLn "  3. Ver alertas"
   putStrLn "  4. Eliminar presupuesto"
   putStrLn "  0. Volver"
-  putStr "Opción: "
-  op <- getLine
+  op <- promptLine "Opción: "
   case op of
     "1" -> agregarPresupuestoMenu refPres >> menuPresupuestos refPres refReg
     "2" -> listarPresupuestos refPres refReg >> menuPresupuestos refPres refReg
@@ -171,11 +181,13 @@ menuPresupuestos refPres refReg = do
 
 agregarPresupuestoMenu :: IORef [Presupuesto] -> IO ()
 agregarPresupuestoMenu refPres = do
-  cat <- pedirCategoria
-  putStr "Límite mensual: "
-  lim <- fmap read getLine :: IO Double
-  modifyIORef refPres (agregarPresupuesto (Presupuesto cat lim))
-  putStrLn " Presupuesto guardado."
+  mCat <- pedirCategoria
+  case mCat of
+    Nothing -> putStrLn "Operación cancelada."
+    Just cat -> do
+      lim <- fmap read (promptLine "Límite mensual: ") :: IO Double
+      modifyIORef refPres (agregarPresupuesto (Presupuesto cat lim))
+      putStrLn " Presupuesto guardado."
 
 listarPresupuestos :: IORef [Presupuesto] -> IORef [Registro] -> IO ()
 listarPresupuestos refPres refReg = do
@@ -203,8 +215,7 @@ eliminarPresupuestoMenu refPres = do
       mapM_ (\(i, p) -> putStrLn ("[" ++ show i ++ "] " ++ mostrarCategoria (presCategoria p) ++
                                   " - límite: " ++ show (presLimite p)))
             (zip ([1..] :: [Int]) ps)
-      putStr "Número a eliminar: "
-      idx <- fmap read getLine :: IO Int
+      idx <- fmap read (promptLine "Número a eliminar: ") :: IO Int
       let nuevos = [ p | (i, p) <- zip ([1..] :: [Int]) ps, i /= idx ]
       writeIORef refPres nuevos
       putStrLn " Presupuesto eliminado."
@@ -220,8 +231,7 @@ menuReglas refRegl refReg = do
   putStrLn "  3. Evaluar reglas"
   putStrLn "  4. Eliminar regla"
   putStrLn "  0. Volver"
-  putStr "Opción: "
-  op <- getLine
+  op <- promptLine "Opción: "
   case op of
     "1" -> agregarReglaMenu refRegl  >> menuReglas refRegl refReg
     "2" -> listarReglas refRegl      >> menuReglas refRegl refReg
@@ -232,19 +242,24 @@ menuReglas refRegl refReg = do
 
 agregarReglaMenu :: IORef [Regla] -> IO ()
 agregarReglaMenu refRegl = do
-  cat <- pedirCategoria
-  putStr "Umbral (monto): "
-  lim <- fmap read getLine :: IO Double
-  putStrLn "Tipo de alerta:"
-  putStrLn "  1. Alerta de presupuesto (si gasto > umbral)"
-  putStrLn "  2. Advertencia de ahorro (si ahorro < umbral)"
-  putStr "Opción: "
-  tOp <- getLine
-  let t = case tOp of
-            "2" -> AdvertenciaAhorro
-            _   -> AlertaPresupuesto
-  modifyIORef refRegl (agregarRegla (Regla cat lim t))
-  putStrLn " Regla guardada."
+  mCat <- pedirCategoria
+  case mCat of
+    Nothing -> putStrLn "Operación cancelada."
+    Just cat -> do
+      lim <- fmap read (promptLine "Umbral (monto): ") :: IO Double
+      putStrLn "Tipo de alerta:"
+      putStrLn "  1. Alerta de presupuesto (si gasto > umbral)"
+      putStrLn "  2. Advertencia de ahorro (si ahorro < umbral)"
+      putStrLn "  0. Cancelar"
+      tOp <- promptLine "Opción: "
+      case tOp of
+        "0" -> putStrLn "Operación cancelada."
+        _ -> do
+          let t = case tOp of
+                    "2" -> AdvertenciaAhorro
+                    _   -> AlertaPresupuesto
+          modifyIORef refRegl (agregarRegla (Regla cat lim t))
+          putStrLn " Regla guardada."
 
 listarReglas :: IORef [Regla] -> IO ()
 listarReglas refRegl = do
@@ -271,8 +286,7 @@ eliminarReglaMenu refRegl = do
     else do
       mapM_ (\(i, r) -> putStrLn ("[" ++ show i ++ "] " ++ mostrarRegla r))
             (zip ([1..] :: [Int]) rs)
-      putStr "Número a eliminar: "
-      idx <- fmap read getLine :: IO Int
+      idx <- fmap read (promptLine "Número a eliminar: ") :: IO Int
       writeIORef refRegl [ r | (i, r) <- zip ([1..] :: [Int]) rs, i /= idx ]
       putStrLn " Regla eliminada."
 
@@ -283,6 +297,16 @@ menuAnalisis refReg = do
   rs <- readIORef refReg
   putStrLn ""
   putStrLn "── ANÁLISIS FINANCIERO ──"
+  putStrLn "  0. Volver"
+  putStrLn "  1. Ver análisis"
+  op <- promptLine "Opción: "
+  case op of
+    "0" -> return ()
+    "1" -> mostrarAnalisis rs
+    _   -> putStrLn "Opción inválida." >> menuAnalisis refReg
+
+mostrarAnalisis :: [Registro] -> IO ()
+mostrarAnalisis rs = do
   putStrLn "\n[Flujo de caja mensual]"
   let flujo = flujoCajaMensual rs
   if null flujo then putStrLn "  Sin datos."
@@ -311,14 +335,22 @@ menuSimulacion refReg = do
   rs <- readIORef refReg
   putStrLn ""
   putStrLn "── SIMULACIÓN FINANCIERA ──"
+  putStrLn "  0. Volver"
+  putStrLn "  1. Ejecutar simulación"
+  op <- promptLine "Opción: "
+  case op of
+    "0" -> return ()
+    "1" -> ejecutarSimulacion rs
+    _   -> putStrLn "Opción inválida." >> menuSimulacion refReg
+
+ejecutarSimulacion :: [Registro] -> IO ()
+ejecutarSimulacion rs = do
   putStrLn ("  Gasto mensual promedio actual: " ++ formatMonto (promedioMensual Gasto rs))
-  putStr "\nPorcentaje de reducción de gastos (%): "
-  p <- fmap read getLine :: IO Double
+  p <- fmap read (promptLine "\nPorcentaje de reducción de gastos (%): ") :: IO Double
   let (gastoNuevo, ahorro) = simularReduccionGastos p rs
   putStrLn ("  Gasto mensual reducido a:      " ++ formatMonto gastoNuevo)
   putStrLn ("  Ahorro extra por mes:           " ++ formatMonto ahorro)
-  putStr "\nProyectar ahorro acumulado a cuántos meses: "
-  n <- fmap read getLine :: IO Int
+  n <- fmap read (promptLine "\nProyectar ahorro acumulado a cuántos meses: ") :: IO Int
   putStrLn ""
   mapM_ (\(mes, ac) -> putStrLn ("  Mes " ++ show mes ++ ": " ++ formatMonto ac))
         (proyeccionAhorro n rs)
@@ -330,10 +362,18 @@ menuReportes refReg = do
   rs <- readIORef refReg
   putStrLn ""
   putStrLn "── REPORTES ──"
-  putStr "Año (ej. 2026): "
-  y <- fmap read getLine :: IO Integer
-  putStr "Mes (1-12): "
-  m <- fmap read getLine :: IO Int
+  putStrLn "  0. Volver"
+  putStrLn "  1. Generar reportes"
+  op <- promptLine "Opción: "
+  case op of
+    "0" -> return ()
+    "1" -> ejecutarReportes rs
+    _   -> putStrLn "Opción inválida." >> menuReportes refReg
+
+ejecutarReportes :: [Registro] -> IO ()
+ejecutarReportes rs = do
+  y <- fmap read (promptLine "Año (ej. 2026): ") :: IO Integer
+  m <- fmap read (promptLine "Mes (1-12): ") :: IO Int
   putStrLn ""
   putStrLn (resumenMensual y m rs)
   let ranking = categoriasMayorGasto rs
@@ -345,35 +385,35 @@ menuReportes refReg = do
                putStrLn ("  " ++ mostrarCategoria cat ++ ": " ++ formatMonto total))
             ranking
   putStrLn "\n── Comparación de períodos ──"
-  putStr "Período 1 - Año: "
-  y1 <- fmap read getLine :: IO Integer
-  putStr "Período 1 - Mes: "
-  m1 <- fmap read getLine :: IO Int
-  putStr "Período 2 - Año: "
-  y2 <- fmap read getLine :: IO Integer
-  putStr "Período 2 - Mes: "
-  m2 <- fmap read getLine :: IO Int
+  y1 <- fmap read (promptLine "Período 1 - Año: ") :: IO Integer
+  m1 <- fmap read (promptLine "Período 1 - Mes: ") :: IO Int
+  y2 <- fmap read (promptLine "Período 2 - Año: ") :: IO Integer
+  m2 <- fmap read (promptLine "Período 2 - Mes: ") :: IO Int
   putStrLn (comparacionPeriodos (y1, m1) (y2, m2) rs)
 
 -- ─── Helpers de input ─────────────────────────────────────────────────────────
 
-pedirTipo :: IO TipoRegistro
+promptLine :: String -> IO String
+promptLine msg = putStr msg >> hFlush stdout >> getLine
+
+pedirTipo :: IO (Maybe TipoRegistro)
 pedirTipo = do
   putStrLn "  Tipo de registro:"
   putStrLn "    1. Ingreso"
   putStrLn "    2. Gasto"
   putStrLn "    3. Ahorro"
   putStrLn "    4. Inversión"
-  putStr "  Opción: "
-  op <- getLine
+  putStrLn "    0. Cancelar"
+  op <- promptLine "  Opción: "
   case op of
-    "1" -> return Ingreso
-    "2" -> return Gasto
-    "3" -> return Ahorro
-    "4" -> return Inversion
+    "0" -> return Nothing
+    "1" -> return (Just Ingreso)
+    "2" -> return (Just Gasto)
+    "3" -> return (Just Ahorro)
+    "4" -> return (Just Inversion)
     _   -> putStrLn "  Opción inválida, intente de nuevo." >> pedirTipo
 
-pedirCategoria :: IO Categoria
+pedirCategoria :: IO (Maybe Categoria)
 pedirCategoria = do
   putStrLn "  Categoría:"
   putStrLn "    1. Alimentación"
@@ -383,19 +423,19 @@ pedirCategoria = do
   putStrLn "    5. Salud"
   putStrLn "    6. Educación"
   putStrLn "    7. Otro"
-  putStr "  Opción: "
-  op <- getLine
+  putStrLn "    0. Cancelar"
+  op <- promptLine "  Opción: "
   case op of
-    "1" -> return Alimentacion
-    "2" -> return Transporte
-    "3" -> return Vivienda
-    "4" -> return Entretenimiento
-    "5" -> return Salud
-    "6" -> return Educacion
+    "0" -> return Nothing
+    "1" -> return (Just Alimentacion)
+    "2" -> return (Just Transporte)
+    "3" -> return (Just Vivienda)
+    "4" -> return (Just Entretenimiento)
+    "5" -> return (Just Salud)
+    "6" -> return (Just Educacion)
     "7" -> do
-      putStr "  Nombre de la categoría: "
-      nombre <- getLine
-      return (Otro nombre)
+      nombre <- promptLine "  Nombre de la categoría: "
+      return (Just (Otro nombre))
     _   -> putStrLn "  Opción inválida, intente de nuevo." >> pedirCategoria
 
 pedirFecha :: IO Day
@@ -405,6 +445,7 @@ pedirFecha = do
   if length parts /= 3
     then do
       putStr "  Formato inválido. Use YYYY-MM-DD: "
+      hFlush stdout
       pedirFecha
     else do
       let y = read (parts !! 0) :: Integer

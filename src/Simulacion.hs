@@ -4,23 +4,21 @@ module Simulacion
   ) where
 
 import Types
+import Analisis (promedioMensual)
 
-totalGastos :: [Registro] -> Double
-totalGastos = foldl' (\acc r -> if tipoRegistro r == Gasto then acc + monto r else acc) 0.0
-
-totalIngresos :: [Registro] -> Double
-totalIngresos = foldl' (\acc r -> if tipoRegistro r == Ingreso then acc + monto r else acc) 0.0
-
+-- Simula reducir el gasto mensual promedio en un porcentaje.
+-- Retorna (nuevo gasto mensual, ahorro extra mensual).
 simularReduccionGastos :: Double -> [Registro] -> (Double, Double)
 simularReduccionGastos porcentaje rs =
-  let gastoActual  = totalGastos rs
-      gastoNuevo   = gastoActual * (1.0 - porcentaje / 100.0)
-      ahorro       = gastoActual - gastoNuevo
-  in (gastoNuevo, ahorro)
+  let gastoMes   = promedioMensual Gasto rs
+      gastoNuevo = gastoMes * (1.0 - porcentaje / 100.0)
+      ahorroExtra = gastoMes - gastoNuevo
+  in (gastoNuevo, ahorroExtra)
 
+-- Proyecta el ahorro acumulado a N meses usando el superávit mensual promedio.
 proyeccionAhorro :: Int -> [Registro] -> [(Int, Double)]
-proyeccionAhorro meses rs =
-  let ingresos    = totalIngresos rs
-      gastos      = totalGastos rs
-      ahorroMes   = ingresos - gastos
-  in [ (m, ahorroMes * fromIntegral m) | m <- [1..meses] ]
+proyeccionAhorro n rs =
+  let ingresosMes = promedioMensual Ingreso rs
+      gastosMes   = promedioMensual Gasto   rs
+      superavit   = ingresosMes - gastosMes
+  in [ (m, superavit * fromIntegral m) | m <- [1..n] ]

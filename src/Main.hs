@@ -285,15 +285,21 @@ menuAnalisis refReg = do
   putStrLn "── ANÁLISIS FINANCIERO ──"
   putStrLn "\n[Flujo de caja mensual]"
   let flujo = flujoCajaMensual rs
-  if null flujo then putStrLn "Sin datos."
+  if null flujo then putStrLn "  Sin datos."
   else mapM_ (\(m, f) -> putStrLn ("  " ++ m ++ ": " ++ formatMonto f)) flujo
-  putStrLn "\n[Tendencia de gastos]"
+  putStrLn "\n[Tendencia de gastos por mes]"
   let tend = tendenciaGasto rs
-  if null tend then putStrLn "Sin datos."
+  if null tend then putStrLn "  Sin datos."
   else mapM_ (\(m, t) -> putStrLn ("  " ++ m ++ ": " ++ formatMonto t)) tend
-  putStrLn "\n[Proyección promedio mensual de gastos]"
+  putStrLn "\n[Gasto promedio mensual (proyección)]"
   putStrLn ("  " ++ formatMonto (proyeccionGastos rs))
-  putStrLn "\n[Categoría con mayor impacto financiero]"
+  putStrLn "\n[Desglose de gastos por categoría]"
+  let breakdown = gastosPorCategoria rs
+  if null breakdown then putStrLn "  Sin datos."
+  else mapM_ (\(cat, tot) ->
+                putStrLn ("  " ++ mostrarCategoria cat ++ ": " ++ formatMonto tot))
+             breakdown
+  putStrLn "\n[Categoría con mayor impacto]"
   case categoriaMayorImpacto rs of
     Nothing  -> putStrLn "  Sin datos."
     Just cat -> putStrLn ("  " ++ mostrarCategoria cat)
@@ -305,11 +311,12 @@ menuSimulacion refReg = do
   rs <- readIORef refReg
   putStrLn ""
   putStrLn "── SIMULACIÓN FINANCIERA ──"
-  putStr "Porcentaje de reducción de gastos (%): "
+  putStrLn ("  Gasto mensual promedio actual: " ++ formatMonto (promedioMensual Gasto rs))
+  putStr "\nPorcentaje de reducción de gastos (%): "
   p <- fmap read getLine :: IO Double
   let (gastoNuevo, ahorro) = simularReduccionGastos p rs
-  putStrLn ("\n  Gastos actuales reducidos a: " ++ formatMonto gastoNuevo)
-  putStrLn ("  Ahorro mensual estimado:     " ++ formatMonto ahorro)
+  putStrLn ("  Gasto mensual reducido a:      " ++ formatMonto gastoNuevo)
+  putStrLn ("  Ahorro extra por mes:           " ++ formatMonto ahorro)
   putStr "\nProyectar ahorro acumulado a cuántos meses: "
   n <- fmap read getLine :: IO Int
   putStrLn ""

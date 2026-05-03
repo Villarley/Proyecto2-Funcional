@@ -3,7 +3,7 @@ cabal-version:       2.2
 name:                Proyecto2-Funcional
 version:             0.1.0.0
 synopsis:            Sistema de gestión de finanzas personales en Haskell
-homepage:            https://github.com/githubuser/Proyecto2-Funcional#readme
+homepage:            https://github.com/Villarley/Proyecto2-Funcional#readme
 license:             BSD-3-Clause
 license-file:        LICENSE
 author:              Author name here
@@ -34,4 +34,4 @@ executable Proyecto2-Funcional
 
 source-repository head
   type:     git
-  location: https://github.com/githubuser/Proyecto2-Funcional
+  location: https://github.com/Villarley/Proyecto2-Funcional

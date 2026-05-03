@@ -1,0 +1,6 @@
+.stack-work/
+*.hi
+*.o
+datos.txt
+presupuestos.txt
+reglas.txt

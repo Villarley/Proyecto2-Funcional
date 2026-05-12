@@ -1,13 +1,12 @@
 module Simulacion
   ( simularReduccionGastos
-  , proyeccionAhorro
+  , proyeccionAhorroAcumulado
   ) where
 
 import Types
 import Analisis (promedioMensual)
 
--- Simula reducir el gasto mensual promedio en un porcentaje.
--- Retorna (nuevo gasto mensual, ahorro extra mensual).
+-- Simula reducir el gasto mensual promedio en un porcentaje
 simularReduccionGastos :: Double -> [Registro] -> (Double, Double)
 simularReduccionGastos porcentaje rs =
   let gastoMes   = promedioMensual Gasto rs
@@ -15,10 +14,7 @@ simularReduccionGastos porcentaje rs =
       ahorroExtra = gastoMes - gastoNuevo
   in (gastoNuevo, ahorroExtra)
 
--- Proyecta el ahorro acumulado a N meses usando el superávit mensual promedio.
-proyeccionAhorro :: Int -> [Registro] -> [(Int, Double)]
-proyeccionAhorro n rs =
-  let ingresosMes = promedioMensual Ingreso rs
-      gastosMes   = promedioMensual Gasto   rs
-      superavit   = ingresosMes - gastosMes
-  in [ (m, superavit * fromIntegral m) | m <- [1..n] ]
+-- Ahorro acumulado si cada mes ahorra el mismo monto
+proyeccionAhorroAcumulado :: Double -> Int -> [(Int, Double)]
+proyeccionAhorroAcumulado porMes n =
+  [ (m, porMes * fromIntegral m) | m <- [1..n] ]

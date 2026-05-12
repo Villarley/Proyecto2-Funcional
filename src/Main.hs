@@ -14,7 +14,7 @@ import Data.Time (Day, fromGregorian)
 import Data.IORef
 import System.IO (hFlush, stdout)
 
--- ─── Entry point ──────────────────────────────────────────────────────────────
+-- inicio del programa
 
 main :: IO ()
 main = do
@@ -24,12 +24,12 @@ main = do
   refReg   <- newIORef registros
   refPres  <- newIORef presupuestos
   refRegl  <- newIORef reglas
-  putStrLn "╔══════════════════════════════════════════╗"
-  putStrLn "║   Sistema de Finanzas Personales (Haskell)  ║"
-  putStrLn "╚══════════════════════════════════════════╝"
+  putStrLn "--------------------------------------"
+  putStrLn "|  Sistema de Finanzas Personales    |"
+  putStrLn "--------------------------------------"
   menuPrincipal refReg refPres refRegl
 
--- ─── Menú principal ───────────────────────────────────────────────────────────
+-- menú principal
 
 menuPrincipal :: IORef [Registro] -> IORef [Presupuesto] -> IORef [Regla] -> IO ()
 menuPrincipal refReg refPres refRegl = do
@@ -60,7 +60,7 @@ guardarTodo refReg refPres refRegl = do
   readIORef refRegl >>= guardarReglas
   putStrLn "Datos guardados. ¡Hasta luego!"
 
--- ─── Registros ────────────────────────────────────────────────────────────────
+-- menú de registros
 
 menuRegistros :: IORef [Registro] -> IO ()
 menuRegistros refReg = do
@@ -159,7 +159,7 @@ eliminarRegistroMenu refReg = do
       writeIORef refReg (eliminarRegistro rid rs)
       putStrLn " Registro eliminado."
 
--- ─── Presupuestos ─────────────────────────────────────────────────────────────
+-- menú de presupuestos
 
 menuPresupuestos :: IORef [Presupuesto] -> IORef [Registro] -> IO ()
 menuPresupuestos refPres refReg = do
@@ -220,7 +220,7 @@ eliminarPresupuestoMenu refPres = do
       writeIORef refPres nuevos
       putStrLn " Presupuesto eliminado."
 
--- ─── Reglas ───────────────────────────────────────────────────────────────────
+-- menú de reglas
 
 menuReglas :: IORef [Regla] -> IORef [Registro] -> IO ()
 menuReglas refRegl refReg = do
@@ -290,7 +290,7 @@ eliminarReglaMenu refRegl = do
       writeIORef refRegl [ r | (i, r) <- zip ([1..] :: [Int]) rs, i /= idx ]
       putStrLn " Regla eliminada."
 
--- ─── Análisis ─────────────────────────────────────────────────────────────────
+-- menú de análisis
 
 menuAnalisis :: IORef [Registro] -> IO ()
 menuAnalisis refReg = do
@@ -328,7 +328,7 @@ mostrarAnalisis rs = do
     Nothing  -> putStrLn "  Sin datos."
     Just cat -> putStrLn ("  " ++ mostrarCategoria cat)
 
--- ─── Simulación ───────────────────────────────────────────────────────────────
+-- menú de simulación
 
 menuSimulacion :: IORef [Registro] -> IO ()
 menuSimulacion refReg = do
@@ -355,7 +355,7 @@ ejecutarSimulacion rs = do
   mapM_ (\(mes, ac) -> putStrLn ("  Mes " ++ show mes ++ ": " ++ formatMonto ac))
         (proyeccionAhorro n rs)
 
--- ─── Reportes ─────────────────────────────────────────────────────────────────
+-- menú de reportes
 
 menuReportes :: IORef [Registro] -> IO ()
 menuReportes refReg = do
@@ -391,7 +391,7 @@ ejecutarReportes rs = do
   m2 <- fmap read (promptLine "Período 2 - Mes: ") :: IO Int
   putStrLn (comparacionPeriodos (y1, m1) (y2, m2) rs)
 
--- ─── Helpers de input ─────────────────────────────────────────────────────────
+-- helpers
 
 promptLine :: String -> IO String
 promptLine msg = putStr msg >> hFlush stdout >> getLine
@@ -453,8 +453,6 @@ pedirFecha = do
           d = read (parts !! 2) :: Int
       return (fromGregorian y m d)
 
--- ─── Helpers de display ───────────────────────────────────────────────────────
-
 mostrarCategoria :: Categoria -> String
 mostrarCategoria Alimentacion    = "Alimentación"
 mostrarCategoria Transporte      = "Transporte"
@@ -503,8 +501,6 @@ mostrarRegla r =
                   AdvertenciaAhorro -> "Advertencia si ahorro <"
   in mostrarCategoria (reglaCategoria r) ++ " - " ++ tipoStr ++
      " " ++ formatMonto (reglaLimite r)
-
--- ─── Utilidades ───────────────────────────────────────────────────────────────
 
 splitOn :: Char -> String -> [String]
 splitOn _ "" = [""]

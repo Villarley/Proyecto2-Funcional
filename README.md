@@ -22,7 +22,7 @@ hicimos un merge usando Pull Requests.
 
 ### Pasos de instalación del programa
 
-1.  Instalar Stack (una herramienta para desarrollo de proyectos con
+**1.** Instalar Stack (una herramienta para desarrollo de proyectos con
     Haskell,
     <https://docs.haskellstack.org/en/stable/install_and_upgrade/>)
 
@@ -32,9 +32,11 @@ hicimos un merge usando Pull Requests.
 
 **En Windows:**
 
-winget install Haskell.Stack
+```bash
+winget install --id commercialhaskell.stack -e
+```
 
-1.  Si es la primera vez usando algo relacionado a
+**2.** Si es la primera vez usando algo relacionado a
     Haskell, descargue GHC (recomendado usar GHCup).
 
 **En MacOS:**
@@ -45,11 +47,20 @@ winget install Haskell.Stack
 
 Seguir esta guía (<https://www.haskell.org/ghcup/install/>).
 
-1.  Correr lo siguiente para compilar el programa, y luego ejecutarlo:
+**3.** Correr lo siguiente para compilar el programa, y luego ejecutarlo:
 
 ![](Images/image4.png)
 
 ![](Images/image5.png)
+
+En Windows se recomienda correr los siguientes comandos, antes de la ejecución del programa, para la correcta visualización de caracteres especiales:
+
+```bash
+chcp 65001
+
+$OutputEncoding = [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new()
+```
+
 
 ---
 

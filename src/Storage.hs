@@ -8,6 +8,7 @@ module Storage
   ) where
 
 import Types
+import Control.Exception (evaluate)
 import System.Directory (doesFileExist)
 
 archivoDatos :: FilePath
@@ -43,6 +44,7 @@ cargarArchivo path = do
   if existe
     then do
       contenido <- readFile path
+      _ <- evaluate (length contenido) -- hay que hacer esto porque readFile es lazy
       let lineas = filter (not . null) (lines contenido)
       return (map read lineas)
     else return []

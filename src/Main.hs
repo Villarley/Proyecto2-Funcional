@@ -58,7 +58,7 @@ guardarTodo refReg refPres refRegl = do
   readIORef refReg  >>= guardarRegistros
   readIORef refPres >>= guardarPresupuestos
   readIORef refRegl >>= guardarReglas
-  putStrLn "Datos guardados. ¡Hasta luego!"
+  putStrLn "Datos guardados. Vuelva pronto!"
 
 -- menú de registros
 
@@ -353,7 +353,7 @@ ejecutarSimulacion rs = do
   n <- fmap read (promptLine "\nProyectar ahorro acumulado a cuántos meses: ") :: IO Int
   putStrLn ""
   mapM_ (\(mes, ac) -> putStrLn ("  Mes " ++ show mes ++ ": " ++ formatMonto ac))
-        (proyeccionAhorro n rs)
+        (proyeccionAhorroAcumulado ahorro n)
 
 -- menú de reportes
 
@@ -473,15 +473,14 @@ formatMonto n = "₡" ++ show (fromIntegral (round n :: Int) :: Int)
 
 mostrarRegistro :: Registro -> String
 mostrarRegistro r = unlines
-  [ "┌─ #" ++ show (registroId r) ++ " ─────────────────────────"
-  , "│  Tipo:        " ++ mostrarTipo (tipoRegistro r)
-  , "│  Monto:       " ++ formatMonto (monto r)
-  , "│  Categoría:   " ++ mostrarCategoria (categoria r)
-  , "│  Fecha:       " ++ show (fecha r)
-  , "│  Descripción: " ++ descripcion r
-  , "│  Etiquetas:   " ++ if null (etiquetas r) then "-"
+  [ "#" ++ show (registroId r)
+  , "Tipo:        " ++ mostrarTipo (tipoRegistro r)
+  , "Monto:       " ++ formatMonto (monto r)
+  , "Categoría:   " ++ mostrarCategoria (categoria r)
+  , "Fecha:       " ++ show (fecha r)
+  , "Descripción: " ++ descripcion r
+  , "Etiquetas:   " ++ if null (etiquetas r) then "-"
                           else intercalate ", " (etiquetas r)
-  , "└────────────────────────────────────────"
   ]
 
 mostrarPresupuesto :: [Registro] -> Presupuesto -> String
